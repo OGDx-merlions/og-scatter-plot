@@ -24,7 +24,7 @@
       },
       /**
       * Chart Data
-      * Format: [{x: Number, y0: Number, y1: Number .... yn: Number}]
+      * Format: [{x: Number, y: [y0, y1, y2, y3...]}]
       * @property data
       */
       data: {
@@ -41,9 +41,7 @@
        */
       showTodayLine: {
         type: Boolean,
-        value() {
-          return true;
-        }
+        value: true
       },
       /**
        * The X-axis point which should be considered as today
@@ -87,9 +85,7 @@
        */
       axisData: {
         type: Object,
-        value() {
-          return this.__defaultAxisData;
-        }
+        notify: true
       },
       /**
        * Legend Alignment
@@ -100,43 +96,39 @@
       legendAlignment: {
         type: String,
         value: "right"
-      },
-      __defaultAxisData: {
-        type: Object,
-        value() {
-          return {
-            "x": {
-              "color": "",
-              "axisLabel": "",
-              "legendLabel": "",
-              "inputDateFormat": "",
-              "tickFormat": "",
-              "tickTimeFormat": "",
-              "hideGrid": false,
-              "d3NiceType": "",
-              "niceTicks": 0,
-              "axisColor": "",
-              "tickColor": ""
-            },
-            "y": {
-              "hideGrid": false,
-              "axisLabel": "",
-              "axisColor": "",
-              "tickColor": "",
-              "niceTicks": 6,
-              "tickFormat": "",
-              "start": 0,
-              "series": [
-                {
-                  "color": "",
-                  "legendLabel": "",
-                  "tickFormat": ""
-                }
-              ]
-            }
-          };
-        }
       }
+    },
+
+    __defaultAxisData: {
+          "x": {
+            "color": "",
+            "axisLabel": "",
+            "legendLabel": "",
+            "inputDateFormat": "",
+            "tickFormat": "",
+            "tickTimeFormat": "",
+            "hideGrid": false,
+            "d3NiceType": "",
+            "niceTicks": 0,
+            "axisColor": "",
+            "tickColor": ""
+          },
+          "y": {
+            "hideGrid": false,
+            "axisLabel": "",
+            "axisColor": "",
+            "tickColor": "",
+            "niceTicks": 6,
+            "tickFormat": "",
+            "start": 0,
+            "series": [
+              {
+                "color": "",
+                "legendLabel": "",
+                "tickFormat": ""
+              }
+            ]
+          }
     },
     
     ready() {
@@ -161,7 +153,6 @@
         this.customStyle['--y-tick-color'] = this.axisData.y.tickColor;
       }
       this.updateStyles();
-      
       this.draw();
     },
 
@@ -170,7 +161,7 @@
       let me = this;
       let data = this.data;
       // set the dimensions and margins of the graph
-      let margin = {top: 20, right: 20, bottom: 30, left: 50},
+      let margin = {top: 30, right: 20, bottom: 40, left: 50},
           width = this.width - margin.left - margin.right,
           height = this.height - margin.top - margin.bottom;
 
@@ -334,10 +325,10 @@
 
       if(this.axisData.x.axisLabel) {
         svg.append("text")
-          .attr("y", 0 - (width/2))
-          .attr("x",0 - (margin.bottom))
           .attr("dy", "1em")
           .attr("class", "x-axis-label")
+          .attr("text-anchor", "middle")
+          .attr("transform", "translate("+ (width/2) +","+(height + margin.top)+")")
           .text(this.axisData.x.axisLabel);
       }
 
