@@ -126,7 +126,9 @@
                 "color": "",
                 "radius": 2,
                 "legendLabel": "",
-                "tickFormat": ""
+                "tickFormat": "",
+                "type": "", 
+                "interpolation": ""
               }
             ]
           }
@@ -171,7 +173,12 @@
         d3.timeParse(this.axisData.x.inputDateFormat) : null;
 
       // set the ranges
-      let x = d3.scaleTime().range([0, width]);
+      let x = null;
+      if(parseTime) {
+        x= d3.scaleTime().range([0, width]);
+      } else {
+        x= d3.scaleLinear().range([0, width]);
+      }
       let y = d3.scaleLinear().range([height, 0]).clamp(true);
           
       let svg = d3.select(this.$.chart).append("svg")
@@ -277,6 +284,25 @@
 
       this.axisData.y.series.forEach((_series, idx) => {
         _series.radius = this.axisData.y.series[idx].radius || 2;
+        const isLineChart = this.axisData.y.series[idx].type === "line";
+
+        if(isLineChart) {
+          let line = d3.line()
+            .x(function(d) { return x(d.x); })
+            .y(function(d) { return y(d.y[idx]); });
+
+          if(this.axisData.y.series[idx].interpolation) {
+            line.curve(d3[this.axisData.y.series[idx].interpolation]);
+          }
+          
+          svg.append("path")
+						.data([data])
+						.attr("class", "series-circle-"+idx)
+            .style("stroke", _series.color || "steelblue")
+            .attr("fill", "transparent")
+						.attr("d", line);
+        }
+
         svg.selectAll(".dot")
           .data(data)
           .enter()
