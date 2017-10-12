@@ -124,6 +124,7 @@
             "series": [
               {
                 "color": "",
+                "radius": 2,
                 "legendLabel": "",
                 "tickFormat": ""
               }
@@ -222,46 +223,25 @@
         });
 
       svg.call(toolTip);
-
-      this.axisData.y.series.forEach((_series, idx) => {
-        svg.selectAll(".dot")
-          .data(data)
-          .enter()
-            .append("circle")
-            .attr("r", 2)
-            .attr("cx", (d, i) => x(d.x))
-            .attr("cy", (d) => y(d.y[idx]))
-            .attr("fill", _series.color || "steelblue")
-            .attr("class", "series-circle-"+idx)
-            .on('mouseover', function(d, i) {
-              d3.select(this)
-                .attr('r', 5);
-              let prefix = _series.label ? _series.label + ": " : "";
-              d.msg = prefix + d.y[idx];
-              toolTip.show(d);
-            })
-            .on('mouseout', function(d) {
-              d3.select(this)
-                .attr('r', 2);
-              toolTip.hide(d);
-            });
-      });
-
-      // Add the X Axis
-      let _xAxis = d3.axisBottom(x);
-      if(parseTime && this.axisData.x.tickTimeFormat) {
-        _xAxis.tickFormat(d3.timeFormat(this.axisData.x.tickTimeFormat));
+      
+      if(!this.axisData.x.hideGrid) {
+        svg.append("g")			
+        .attr("class", "grid x-grid")
+        .call(d3.axisBottom(x)
+            .ticks(this.axisData.x.totalGridLines || 5)
+            .tickSize(height)
+            .tickFormat(""));
       }
-      svg.append("g")
-          .attr("transform", "translate(0," + height + ")")
-          .attr("class", "x-axis")
-          .call(_xAxis);
-
-      // Add the Y Axis
-      svg.append("g")
-          .attr("class", "y-axis")
-          .call(d3.axisLeft(y).ticks(this.axisData.y.niceTicks || 6));
-
+          
+      if(!this.axisData.y.hideGrid) {
+        svg.append("g")			
+        .attr("class", "grid y-grid")
+        .call(d3.axisLeft(y)
+            .ticks(this.axisData.y.totalGridLines || 5)
+            .tickSize(-width)
+            .tickFormat(""));
+      }
+      
       if(this.showTodayLine) {
         svg.append("svg:line")
           .attr("class", "today")
@@ -295,23 +275,45 @@
         }
       }
 
-      if(!this.axisData.x.hideGrid) {
-        svg.append("g")			
-        .attr("class", "grid x-grid")
-        .call(d3.axisBottom(x)
-            .ticks(this.axisData.x.totalGridLines || 5)
-            .tickSize(height)
-            .tickFormat(""));
+      this.axisData.y.series.forEach((_series, idx) => {
+        _series.radius = this.axisData.y.series[idx].radius || 2;
+        svg.selectAll(".dot")
+          .data(data)
+          .enter()
+            .append("circle")
+            .attr("r", _series.radius)
+            .attr("cx", (d, i) => x(d.x))
+            .attr("cy", (d) => y(d.y[idx]))
+            .attr("fill", _series.color || "steelblue")
+            .attr("class", "series-circle-"+idx)
+            .on('mouseover', function(d, i) {
+              d3.select(this)
+                .attr('r', _series.radius + 2);
+              let prefix = _series.label ? _series.label + ": " : "";
+              d.msg = prefix + d.y[idx];
+              toolTip.show(d);
+            })
+            .on('mouseout', function(d) {
+              d3.select(this)
+                .attr('r', _series.radius);
+              toolTip.hide(d);
+            });
+      });
+
+      // Add the X Axis
+      let _xAxis = d3.axisBottom(x);
+      if(parseTime && this.axisData.x.tickTimeFormat) {
+        _xAxis.tickFormat(d3.timeFormat(this.axisData.x.tickTimeFormat));
       }
-          
-      if(!this.axisData.y.hideGrid) {
-        svg.append("g")			
-        .attr("class", "grid y-grid")
-        .call(d3.axisLeft(y)
-            .ticks(this.axisData.y.totalGridLines || 5)
-            .tickSize(-width)
-            .tickFormat(""));
-      }
+      svg.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .attr("class", "x-axis")
+          .call(_xAxis);
+
+      // Add the Y Axis
+      svg.append("g")
+          .attr("class", "y-axis")
+          .call(d3.axisLeft(y).ticks(this.axisData.y.niceTicks || 6));
 
       if(this.axisData.y.axisLabel) {
         svg.append("text")
