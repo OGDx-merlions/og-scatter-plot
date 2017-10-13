@@ -300,7 +300,8 @@
 						.attr("class", "series-circle-"+idx)
             .style("stroke", _series.color || "steelblue")
             .attr("fill", "transparent")
-						.attr("d", line);
+            .attr("d", line)
+            .style("pointer-events", "none");
         }
 
         svg.selectAll(".dot")
