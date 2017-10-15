@@ -128,7 +128,9 @@
                 "legendLabel": "",
                 "tickFormat": "",
                 "type": "", 
-                "interpolation": ""
+                "interpolation": "",
+                "xStart": "",
+                "xEnd": ""
               }
             ]
           }
@@ -283,7 +285,27 @@
       }
 
       this.axisData.y.series.forEach((_series, idx) => {
-        _series.radius = this.axisData.y.series[idx].radius || 2;
+
+        let filteredData = data.filter((_datum) => {
+          if(!_series.xStart && !_series.xEnd) {
+            return true;
+          }
+          let result = true;
+          if(_series.xStart) {
+            let scaledXStart = parseTime ? parseTime(_series.xStart) : +_series.xStart;
+            result = x(_datum.x) >= x(scaledXStart);
+          }
+          if(result && _series.xEnd) {
+            let scaledXEnd = parseTime ? parseTime(_series.xEnd) : +_series.xEnd;
+            return x(_datum.x) <= x(scaledXEnd); 
+          }
+          return result;
+        });
+
+
+        if(this.axisData.y.series[idx].radius !== 0) {
+          _series.radius = this.axisData.y.series[idx].radius || 2;
+        }
         const isLineChart = this.axisData.y.series[idx].type === "line";
 
         if(isLineChart) {
@@ -296,7 +318,7 @@
           }
           
           svg.append("path")
-						.data([data])
+						.data([filteredData])
 						.attr("class", "series-circle-"+idx)
             .style("stroke", _series.color || "steelblue")
             .attr("fill", "transparent")
@@ -305,7 +327,7 @@
         }
 
         svg.selectAll(".dot")
-          .data(data)
+          .data(filteredData)
           .enter()
             .append("circle")
             .attr("r", _series.radius)
