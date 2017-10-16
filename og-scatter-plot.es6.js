@@ -363,7 +363,6 @@
 
       // Add the Y Axis
       let _yAxis = d3.axisLeft(y).ticks(this.axisData.y.niceTicks || 6);
-      console.log(this.axisData.y.tickFormat)
       if(this.axisData.y.tickFormat) {
         _yAxis.tickFormat(d3.format(this.axisData.y.tickFormat));
       }
