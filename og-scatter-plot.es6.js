@@ -353,6 +353,8 @@
       let _xAxis = d3.axisBottom(x);
       if(parseTime && this.axisData.x.tickTimeFormat) {
         _xAxis.tickFormat(d3.timeFormat(this.axisData.x.tickTimeFormat));
+      } else if(this.axisData.x.tickFormat) {
+        _xAxis.tickFormat(d3.format(this.axisData.x.tickFormat));
       }
       svg.append("g")
           .attr("transform", "translate(0," + height + ")")
@@ -360,9 +362,14 @@
           .call(_xAxis);
 
       // Add the Y Axis
+      let _yAxis = d3.axisLeft(y).ticks(this.axisData.y.niceTicks || 6);
+      console.log(this.axisData.y.tickFormat)
+      if(this.axisData.y.tickFormat) {
+        _yAxis.tickFormat(d3.format(this.axisData.y.tickFormat));
+      }
       svg.append("g")
           .attr("class", "y-axis")
-          .call(d3.axisLeft(y).ticks(this.axisData.y.niceTicks || 6));
+          .call(_yAxis);
 
       if(this.axisData.y.axisLabel) {
         svg.append("text")
