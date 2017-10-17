@@ -165,7 +165,7 @@
       let d3 = Px.d3;
       let me = this;
       let data = this.data;
-      if(!data || data.length === 0) {return;}
+      if(!data || data.length === 0 || !this.axisData.x) {return;}
       // set the dimensions and margins of the graph
       let margin = {top: 30, right: 20, bottom: 40, left: 50},
           width = this.width - margin.left - margin.right,
@@ -394,10 +394,8 @@
     },
 
     _redraw(newData, oldData) {
-			if(oldData && oldData.length) {
-        Polymer.dom(this.$.chart).node.innerHTML = "";
-        this.draw();
-      }
+      Polymer.dom(this.$.chart).node.innerHTML = "";
+      this.draw();
     },
     
     _toggleSeries(event) {
