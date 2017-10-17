@@ -158,6 +158,7 @@
         this.customStyle['--y-tick-color'] = this.axisData.y.tickColor;
       }
       this.updateStyles();
+      this.draw();
     },
 
     draw() {
@@ -393,8 +394,10 @@
     },
 
     _redraw(newData, oldData) {
-			Polymer.dom(this.$.chart).node.innerHTML = "";
-      this.draw();
+			if(oldData && oldData.length) {
+        Polymer.dom(this.$.chart).node.innerHTML = "";
+        this.draw();
+      }
     },
     
     _toggleSeries(event) {
