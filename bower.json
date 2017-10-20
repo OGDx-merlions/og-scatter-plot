@@ -1,6 +1,6 @@
 {
   "name": "og-scatter-plot",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "main": [
     "og-scatter-plot.html"
   ],
