@@ -1,7 +1,7 @@
 (function() {
   Polymer({
 
-    is: 'og-scatter-plot', 
+    is: 'og-scatter-plot',
 
     properties: {
       /**
@@ -36,7 +36,7 @@
       },
       /**
        * Show Today Line and subsequently, Historical and Forecast Labels
-       * 
+       *
        * @property showTodayLine
        */
       showTodayLine: {
@@ -45,7 +45,7 @@
       },
       /**
        * The X-axis point which should be considered as today
-       * 
+       *
        * @property today
        */
       today: {
@@ -53,7 +53,7 @@
       },
       /**
        * Today Label
-       * 
+       *
        * @property todayLabel
        */
       todayLabel: {
@@ -62,7 +62,7 @@
       },
       /**
        * Historical Label
-       * 
+       *
        * @property historicalLabel
        */
       historicalLabel: {
@@ -71,7 +71,7 @@
       },
       /**
        * Forecast Label
-       * 
+       *
        * @property forecastLabel
        */
       forecastLabel: {
@@ -80,17 +80,18 @@
       },
       /**
        * Forecast Label
-       * 
+       *
        * @property axisData
        */
       axisData: {
         type: Object,
-        notify: true
+        notify: true,
+        observer: '_redraw'
       },
       /**
        * Legend Alignment
        * Eg: right, left, center
-       * 
+       *
        * @property legendAlignment
        */
       legendAlignment: {
@@ -127,7 +128,7 @@
                 "radius": 2,
                 "legendLabel": "",
                 "tickFormat": "",
-                "type": "", 
+                "type": "",
                 "interpolation": "",
                 "xStart": "",
                 "xEnd": ""
@@ -135,7 +136,7 @@
             ]
           }
     },
-    
+
     ready() {
       this.scopeSubtree(this.$.chart, true);
     },
@@ -158,14 +159,16 @@
         this.customStyle['--y-tick-color'] = this.axisData.y.tickColor;
       }
       this.updateStyles();
-      this.draw();
+      if(this.data && this.data.length) {
+        this.draw();
+      }
     },
 
     draw() {
       let d3 = Px.d3;
       let me = this;
       let data = this.data;
-      if(!data || data.length === 0 || !this.axisData.x) {return;}
+      if(!data || data.length === 0 || !this.axisData || !this.axisData.x) {return;}
       // set the dimensions and margins of the graph
       let margin = {top: 30, right: 20, bottom: 40, left: 50},
           width = this.width - margin.left - margin.right,
@@ -183,14 +186,15 @@
         x= d3.scaleLinear().range([0, width]);
       }
       let y = d3.scaleLinear().range([height, 0]).clamp(true);
-          
+
+      d3.select(this.$.chart).select("svg").remove();
       let svg = d3.select(this.$.chart).append("svg")
           .attr("viewBox", "0 0 "+this.width+" "+this.height)
           .attr("preserveAspectRatio", "xMidYMid meet")
         .append("g")
           .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
-      
+
       data.forEach(function(d) {
         if(parseTime) {
           d.x = d.x.getTime ? d.x : parseTime(d.x);
@@ -202,10 +206,10 @@
       });
 
       let today = this.today ? parseTime(this.today) : null;
-      
+
       let yMax = d3.max(data, function(d) {
         return d.y.reduce((a,b) => {
-          return Math.max(a,b); 
+          return Math.max(a,b);
         })
       });
       let yMin = this.axisData.y.start > 0 ? this.axisData.y.start : 0;
@@ -222,7 +226,7 @@
       if(this.axisData.y.niceTicks) {
         y.nice(this.axisData.y.niceTicks);
       }
-      
+
       let yScaledMin = y(y.domain()[0]);
 
       var toolTip = d3.tip(d3.select(this.$.chart))
@@ -233,25 +237,25 @@
         });
 
       svg.call(toolTip);
-      
+
       if(!this.axisData.x.hideGrid) {
-        svg.append("g")			
+        svg.append("g")
         .attr("class", "grid x-grid")
         .call(d3.axisBottom(x)
             .ticks(this.axisData.x.totalGridLines || 5)
             .tickSize(height)
             .tickFormat(""));
       }
-          
+
       if(!this.axisData.y.hideGrid) {
-        svg.append("g")			
+        svg.append("g")
         .attr("class", "grid y-grid")
         .call(d3.axisLeft(y)
             .ticks(this.axisData.y.totalGridLines || 5)
             .tickSize(-width)
             .tickFormat(""));
       }
-      
+
       if(this.showTodayLine) {
         svg.append("svg:line")
           .attr("class", "today")
@@ -267,7 +271,7 @@
             .attr("y", -9)
             .text(this.historicalLabel);
         }
-        
+
         if(this.todayLabel) {
           svg.append("text")
             .attr("class", "today-text")
@@ -275,7 +279,7 @@
             .attr("y", -9)
             .text(this.todayLabel);
         }
-        
+
         if(this.forecastLabel) {
           svg.append("text")
           .attr("class", "today-text")
@@ -298,7 +302,7 @@
           }
           if(result && _series.xEnd) {
             let scaledXEnd = parseTime ? parseTime(_series.xEnd) : +_series.xEnd;
-            return x(_datum.x) <= x(scaledXEnd); 
+            return x(_datum.x) <= x(scaledXEnd);
           }
           return result;
         });
@@ -317,7 +321,7 @@
           if(this.axisData.y.series[idx].interpolation) {
             line.curve(d3[this.axisData.y.series[idx].interpolation]);
           }
-          
+
           svg.append("path")
 						.data([filteredData])
 						.attr("class", "series-circle-"+idx)
@@ -394,13 +398,13 @@
     },
 
     _redraw(newData, oldData) {
-      Polymer.dom(this.$.chart).node.innerHTML = "";
+      Px.d3.select(this.$.chart).select("svg").remove();
       this.draw();
     },
-    
+
     _toggleSeries(event) {
       const label = "series-circle-" + event.model.get("idx");
-      
+
       this[label] = !this[label];
 			if(this[label]) {
 				this.querySelectorAll("."+label).forEach((elt) => {
