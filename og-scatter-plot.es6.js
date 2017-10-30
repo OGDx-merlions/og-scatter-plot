@@ -142,6 +142,27 @@
     },
 
     attached() {
+      this._setupDefaults();
+      if(this.data && this.data.length) {
+        this.draw();
+      }
+    },
+
+    draw() {
+      let d3 = Px.d3, data = this.data;
+      if(!data || data.length === 0 || !this.axisData || !this.axisData.x) {return;}
+      data = this._massageData(data);
+      this._prepareChartingArea();
+      this._prepareAxes(data);
+      this._drawGridLines(data);
+      this._drawTimelineSeparators(data);
+      this._drawChart(data);
+      this._drawAxes(data);
+
+      this.fire("chart-drawn", {});
+    },
+    
+    _setupDefaults() {
       this.axisData = this.axisData ? this.axisData : this.__defaultAxisData;
       this.axisData.x = this.axisData.x ? this.axisData.x : this.__defaultAxisData.x;
       this.axisData.y = this.axisData.y ? this.axisData.y : this.__defaultAxisData.y;
@@ -159,53 +180,62 @@
         this.customStyle['--y-tick-color'] = this.axisData.y.tickColor;
       }
       this.updateStyles();
-      if(this.data && this.data.length) {
-        this.draw();
-      }
     },
 
-    draw() {
+    _massageData(data) {
       let d3 = Px.d3;
-      let me = this;
-      let data = this.data;
-      if(!data || data.length === 0 || !this.axisData || !this.axisData.x) {return;}
-      // set the dimensions and margins of the graph
-      let margin = {top: 30, right: 20, bottom: 40, left: 50},
-          width = this.width - margin.left - margin.right,
-          height = this.height - margin.top - margin.bottom;
-
       // parse the date / time
-      let parseTime = this.axisData.x.inputDateFormat ?
+      this.parseTime = this.axisData.x.inputDateFormat ?
         d3.timeParse(this.axisData.x.inputDateFormat) : null;
 
-      // set the ranges
-      let x = null;
-      if(parseTime) {
-        x= d3.scaleTime().range([0, width]);
-      } else {
-        x= d3.scaleLinear().range([0, width]);
-      }
-      let y = d3.scaleLinear().range([height, 0]).clamp(true);
-
-      d3.select(this.$.chart).select("svg").remove();
-      let svg = d3.select(this.$.chart).append("svg")
-          .attr("viewBox", "0 0 "+this.width+" "+this.height)
-          .attr("preserveAspectRatio", "xMidYMid meet")
-        .append("g")
-          .attr("transform",
-                "translate(" + margin.left + "," + margin.top + ")");
-
-      data.forEach(function(d) {
-        if(parseTime) {
-          d.x = d.x.getTime ? d.x : parseTime(d.x);
+      data.forEach((d) => {
+        if(this.parseTime) {
+          d.x = d.x.getTime ? d.x : this.parseTime(d.x);
         }
         for(let i = 0; i < d.length-1; i++) {
           let key = "y";
           d[key][i] = d[key][i] ? (+d[key][i]) : 0;
         }
       });
+      return data;
+    },
+    _prepareChartingArea() {
+      let d3 = Px.d3;
+      // set the dimensions and margins of the graph
+      this.margin = {top: 30, right: 20, bottom: 40, left: 50},
+      this.adjustedWidth = this.width - this.margin.left - this.margin.right,
+      this.adjustedHeight = this.height - this.margin.top - this.margin.bottom;
 
-      let today = this.today ? parseTime(this.today) : null;
+      d3.select(this.$.chart).select("svg").remove();
+      this.svg = d3.select(this.$.chart).append("svg")
+          .attr("viewBox", "0 0 "+this.width+" "+this.height)
+          .attr("preserveAspectRatio", "xMidYMid meet")
+        .append("g")
+          .attr("transform",
+                "translate(" + this.margin.left + "," + this.margin.top + ")");
+
+      this.toolTip = d3.tip(d3.select(this.$.chart))
+        .attr("class", "d3-tip")
+        .offset([-8, 0])
+        .html(function(d) {
+          return d.msg;
+        });
+
+      this.svg.call(this.toolTip);
+    },
+    _prepareAxes(data) {
+      // set the ranges
+      let d3 = Px.d3;
+      if(this.parseTime) {
+        this.x= d3.scaleTime().range([0, this.adjustedWidth]);
+      } else {
+        this.x= d3.scaleLinear().range([0, this.adjustedWidth]);
+      }
+      this.y = d3.scaleLinear().range([this.adjustedHeight, 0]).clamp(true);
+
+      let x = this.x, y = this.y;
+
+      this.todayAsDate = this.today ? this.parseTime(this.today) : null;
 
       let yMax = d3.max(data, function(d) {
         return d.y.reduce((a,b) => {
@@ -215,7 +245,7 @@
       let yMin = this.axisData.y.start > 0 ? this.axisData.y.start : 0;
 
       x.domain(d3.extent(data, function(d) { return d.x; }));
-      if(parseTime) {
+      if(this.parseTime) {
         x.nice(d3[this.axisData.x.d3NiceType || "timeDay"]);
       } else if(this.axisData.x.niceTicks) {
         x.nice(this.axisData.x.niceTicks);
@@ -226,82 +256,78 @@
       if(this.axisData.y.niceTicks) {
         y.nice(this.axisData.y.niceTicks);
       }
-
+    },
+    _drawGridLines(data) {
+      let x = this.x, y = this.y, d3 = Px.d3;
       let yScaledMin = y(y.domain()[0]);
-
-      var toolTip = d3.tip(d3.select(this.$.chart))
-        .attr("class", "d3-tip")
-        .offset([-8, 0])
-        .html(function(d) {
-          return d.msg;
-        });
-
-      svg.call(toolTip);
-
       if(!this.axisData.x.hideGrid) {
-        svg.append("g")
-        .attr("class", "grid x-grid")
-        .call(d3.axisBottom(x)
-            .ticks(this.axisData.x.totalGridLines || 5)
-            .tickSize(height)
-            .tickFormat(""));
+        this.svg.append("g")
+          .attr("class", "grid x-grid")
+          .call(d3.axisBottom(x)
+              .ticks(this.axisData.x.totalGridLines || 5)
+              .tickSize(this.adjustedHeight)
+              .tickFormat(""));
       }
 
       if(!this.axisData.y.hideGrid) {
-        svg.append("g")
-        .attr("class", "grid y-grid")
-        .call(d3.axisLeft(y)
-            .ticks(this.axisData.y.totalGridLines || 5)
-            .tickSize(-width)
-            .tickFormat(""));
+        this.svg.append("g")
+          .attr("class", "grid y-grid")
+          .call(d3.axisLeft(y)
+              .ticks(this.axisData.y.totalGridLines || 5)
+              .tickSize(-this.adjustedWidth)
+              .tickFormat(""));
       }
-
+    },
+    _drawTimelineSeparators(data) {
+      let x = this.x, y = this.y, d3 = Px.d3;
       if(this.showTodayLine) {
-        svg.append("svg:line")
+        this.svg.append("svg:line")
           .attr("class", "today")
-          .attr("x1", x(today))
-          .attr("y1", height+18)
-          .attr("x2", x(today))
+          .attr("x1", x(this.todayAsDate))
+          .attr("y1", this.adjustedHeight+18)
+          .attr("x2", x(this.todayAsDate))
           .attr("y2", -7);
 
         if(this.historicalLabel) {
-          svg.append("text")
+          this.svg.append("text")
             .attr("class", "today-text")
-            .attr("x", (x(x.domain()[0]) + x(today))/2)
+            .attr("x", (x(x.domain()[0]) + x(this.todayAsDate))/2)
             .attr("y", -9)
             .text(this.historicalLabel);
         }
 
         if(this.todayLabel) {
-          svg.append("text")
+          this.svg.append("text")
             .attr("class", "today-text")
-            .attr("x", x(today)-10)
+            .attr("x", x(this.todayAsDate)-10)
             .attr("y", -9)
             .text(this.todayLabel);
         }
 
         if(this.forecastLabel) {
-          svg.append("text")
-          .attr("class", "today-text")
-          .attr("x", (x(x.domain()[1]) * 0.8))
-          .attr("y", -9)
-          .text(this.forecastLabel);
+          this.svg.append("text")
+            .attr("class", "today-text")
+            .attr("x", (x(x.domain()[1]) * 0.8))
+            .attr("y", -9)
+            .text(this.forecastLabel);
         }
       }
-
+    },
+    _drawChart(data) {
+      let x = this.x, y = this.y, d3 = Px.d3;
       this.axisData.y.series.forEach((_series, idx) => {
-
+        
         let filteredData = data.filter((_datum) => {
           if(!_series.xStart && !_series.xEnd) {
             return true;
           }
           let result = true;
           if(_series.xStart) {
-            let scaledXStart = parseTime ? parseTime(_series.xStart) : +_series.xStart;
+            let scaledXStart = this.parseTime ? this.parseTime(_series.xStart) : +_series.xStart;
             result = x(_datum.x) >= x(scaledXStart);
           }
           if(result && _series.xEnd) {
-            let scaledXEnd = parseTime ? parseTime(_series.xEnd) : +_series.xEnd;
+            let scaledXEnd = this.parseTime ? this.parseTime(_series.xEnd) : +_series.xEnd;
             return x(_datum.x) <= x(scaledXEnd);
           }
           return result;
@@ -322,16 +348,16 @@
             line.curve(d3[this.axisData.y.series[idx].interpolation]);
           }
 
-          svg.append("path")
-						.data([filteredData])
-						.attr("class", "series-circle-"+idx)
+          this.svg.append("path")
+            .data([filteredData])
+            .attr("class", "series-circle-"+idx)
             .style("stroke", _series.color || "steelblue")
             .attr("fill", "transparent")
             .attr("d", line)
             .style("pointer-events", "none");
         }
 
-        svg.selectAll(".dot")
+        this.svg.selectAll(".dot")
           .data(filteredData)
           .enter()
             .append("circle")
@@ -340,29 +366,32 @@
             .attr("cy", (d) => y(d.y[idx]))
             .attr("fill", _series.color || "steelblue")
             .attr("class", "series-circle-"+idx)
-            .on('mouseover', function(d, i) {
+            .on('mouseover', (d, i) => {
               d3.select(this)
                 .attr('r', _series.radius + 2);
               let prefix = _series.label ? _series.label + ": " : "";
               d.msg = prefix + d.y[idx];
-              toolTip.show(d);
+              this.toolTip.show(d);
             })
-            .on('mouseout', function(d) {
+            .on('mouseout', (d) => {
               d3.select(this)
                 .attr('r', _series.radius);
-              toolTip.hide(d);
+              this.toolTip.hide(d);
             });
       });
+    },
+    _drawAxes(data) {
+      let x = this.x, y = this.y, d3 = Px.d3;
 
       // Add the X Axis
       let _xAxis = d3.axisBottom(x);
-      if(parseTime && this.axisData.x.tickTimeFormat) {
+      if(this.parseTime && this.axisData.x.tickTimeFormat) {
         _xAxis.tickFormat(d3.timeFormat(this.axisData.x.tickTimeFormat));
       } else if(this.axisData.x.tickFormat) {
         _xAxis.tickFormat(d3.format(this.axisData.x.tickFormat));
       }
-      svg.append("g")
-          .attr("transform", "translate(0," + height + ")")
+      this.svg.append("g")
+          .attr("transform", "translate(0," + this.adjustedHeight + ")")
           .attr("class", "x-axis")
           .call(_xAxis);
 
@@ -371,30 +400,29 @@
       if(this.axisData.y.tickFormat) {
         _yAxis.tickFormat(d3.format(this.axisData.y.tickFormat));
       }
-      svg.append("g")
+      this.svg.append("g")
           .attr("class", "y-axis")
           .call(_yAxis);
 
       if(this.axisData.y.axisLabel) {
-        svg.append("text")
+        this.svg.append("text")
           .attr("transform", "rotate(-90)")
-          .attr("y", 0 - margin.left)
-          .attr("x",0 - (height / 2))
+          .attr("y", 0 - this.margin.left)
+          .attr("x",0 - (this.adjustedHeight / 2))
           .attr("dy", "1em")
           .attr("class", "y-axis-label")
           .text(this.axisData.y.axisLabel);
       }
 
       if(this.axisData.x.axisLabel) {
-        svg.append("text")
+        this.svg.append("text")
           .attr("dy", "1em")
           .attr("class", "x-axis-label")
           .attr("text-anchor", "middle")
-          .attr("transform", "translate("+ (width/2) +","+(height + margin.top)+")")
+          .attr("transform", "translate("+ 
+            (this.adjustedWidth/2) +","+(this.adjustedHeight + this.margin.top)+")")
           .text(this.axisData.x.axisLabel);
       }
-
-      this.fire("chart-drawn", {});
     },
 
     _redraw(newData, oldData) {
