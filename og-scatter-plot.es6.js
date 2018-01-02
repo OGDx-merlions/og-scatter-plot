@@ -125,6 +125,7 @@
             "series": [
               {
                 "color": "",
+                "dashArray": "",
                 "radius": 2,
                 "legendLabel": "",
                 "tickFormat": "",
@@ -352,6 +353,7 @@
             .data([filteredData])
             .attr("class", "series-circle-"+idx)
             .style("stroke", _series.color || "steelblue")
+						.style("stroke-dasharray", _series.dashArray || "0,0")
             .attr("fill", "transparent")
             .attr("d", line)
             .style("pointer-events", "none");
