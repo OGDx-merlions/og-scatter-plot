@@ -23,6 +23,19 @@
 				value: 300
       },
       /**
+      * Chart Margin.
+        Default: {top: 30, right: 20, bottom: 40, left: 50}
+      *
+      * @property margin
+      */
+			margin: {
+				type: Object,
+				notify: true,
+				value() {
+					return {top: 30, right: 20, bottom: 40, left: 50};
+				}
+			},
+      /**
       * Chart Data
       * Format: [{x: Number, y: [y0, y1, y2, y3...]}]
       * @property data
@@ -266,7 +279,7 @@
         this.svg.append("g")
           .attr("class", "grid x-grid")
           .call(d3.axisBottom(x)
-              .ticks(this.axisData.x.totalGridLines || 5)
+              // .ticks(this.axisData.x.totalGridLines || 10)
               .tickSize(this.adjustedHeight)
               .tickFormat(""));
       }
@@ -392,6 +405,9 @@
         _xAxis.tickFormat(d3.timeFormat(this.axisData.x.tickTimeFormat));
       } else if(this.axisData.x.tickFormat) {
         _xAxis.tickFormat(d3.format(this.axisData.x.tickFormat));
+      }
+      if(this.axisData.x.niceTicks) {
+        _xAxis.ticks(this.axisData.x.niceTicks);
       }
       this.svg.append("g")
           .attr("transform", "translate(0," + this.adjustedHeight + ")")
