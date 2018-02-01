@@ -217,7 +217,7 @@
     _prepareChartingArea() {
       let d3 = Px.d3;
       // set the dimensions and margins of the graph
-      this.margin = {top: 30, right: 20, bottom: 40, left: 50},
+      this.margin = this.margin || {top: 30, right: 20, bottom: 40, left: 50},
       this.adjustedWidth = this.width - this.margin.left - this.margin.right,
       this.adjustedHeight = this.height - this.margin.top - this.margin.bottom;
 
