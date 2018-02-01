@@ -53,15 +53,7 @@
             "y":["111","234","323","546"]},{"x":"2017-04-29T00:00:00.000Z","y":["434","234","232","766"]},
             {"x":"2017-04-30T00:00:00.000Z","y":["55","23","567","567"]},{"x":"2017-05-01T00:00:00.000Z",
             "y":["23","445","43","567"]},{"x":"2017-05-02T00:00:00.000Z","y":["123","898","987","12"]}]'
-          axis-data='{"x":{"color":"","axisLabel":"Time","legendLabel":"","inputDateFormat":"%Y-%m-%dT%H:%M:%S.%LZ",
-          "tickFormat":"","tickTimeFormat":"","hideGrid":false,"d3NiceType":"timeDay","niceTicks":0,"axisColor":"lightgrey",
-          "tickColor":"lightgrey"},"y":{"hideGrid":false,"axisLabel":"Numbers in thousands","axisColor":"lightgrey",
-          "tickColor":"lightgrey","niceTicks":6,"tickFormat":".00s","start":0,"series":[{"color":"green",
-          "legendLabel":"Apples","radius": 5},{"color":"fuchsia","legendLabel":"Oranges",
-          "type": "line", "interpolation": "curveCardinal"},{"color":"red","type": "line", "legendLabel":"Strawberry",
-          "xEnd": "2017-04-30T00:00:00.000Z"},
-          {"color":"violet","legendLabel":"Durians","type": "line", 
-          "xStart": "2017-04-30T00:00:00.000Z", "dashArray": "2,2"}]}}'>        
+          axis-data="[[props.axisData.value]]">        
         </og-scatter-plot>
       </px-demo-component>
       <!-- END Component ------------------------------------------------------>
@@ -279,15 +271,30 @@
       },
       axisData: {
         type: Object,
-        defaultValue: {"x":{"color":"","axisLabel":"Time","legendLabel":"","inputDateFormat":"%Y-%m-%dT%H:%M:%S.%LZ",
-        "tickFormat":"","tickTimeFormat":"","hideGrid":false,"d3NiceType":"timeDay","niceTicks":0,"axisColor":"lightgrey",
-        "tickColor":"lightgrey"},"y":{"hideGrid":false,"axisLabel":"Numbers in thousands","axisColor":"lightgrey",
-        "tickColor":"lightgrey","niceTicks":6,"tickFormat":".00s","start":0,"series":[{"color":"green",
-        "legendLabel":"Apples","radius": 5},{"color":"fuchsia","legendLabel":"Oranges",
-        "type": "line", "interpolation": "curveCardinal"},{"color":"red","type": "line", "legendLabel":"Strawberry",
-        "xEnd": "2017-04-30T00:00:00.000Z"},
-        {"color":"violet","legendLabel":"Durians","type": "line", 
-        "xStart": "2017-04-30T00:00:00.000Z", "dashArray": "2,2"}]}},
+        defaultValue: {
+          "x": {
+            "color": "", "axisLabel": "Time", "legendLabel": "", "inputDateFormat": "%Y-%m-%dT%H:%M:%S.%LZ",
+            "tickFormat": "", "tickTimeFormat": "", "hideGrid": false, 
+            "d3NiceType": function() {return d3.timeDay.every(4)}, "niceTicks": 0, "axisColor": "lightgrey",
+            "tickColor": "lightgrey"
+          }, "y": {
+            "hideGrid": false, "axisLabel": "Numbers in thousands", "axisColor": "lightgrey",
+            "tickColor": "lightgrey", "niceTicks": 6, "tickFormat": ".00s", "start": 0, "series": [{
+              "color": "green",
+              "legendLabel": "Apples", "radius": 5
+            }, {
+              "color": "fuchsia", "legendLabel": "Oranges",
+              "type": "line", "interpolation": "curveCardinal"
+            }, {
+              "color": "red", "type": "line", "legendLabel": "Strawberry",
+              "xEnd": "2017-04-30T00:00:00.000Z"
+            },
+            {
+              "color": "violet", "legendLabel": "Durians", "type": "line",
+              "xStart": "2017-04-30T00:00:00.000Z", "dashArray": "2,2"
+            }]
+          }
+        },
         inputType: 'code:JSON'
       }
     }

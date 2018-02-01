@@ -144,7 +144,7 @@
 
     attached() {
       this._setupDefaults();
-      if(this.data && this.data.length) {
+      if(this.data && this.data.length && this.axisData) {
         this.draw();
       }
     },
@@ -235,7 +235,6 @@
       this.y = d3.scaleLinear().range([this.adjustedHeight, 0]).clamp(true);
 
       let x = this.x, y = this.y;
-
       this.todayAsDate = this.today ? this.parseTime(this.today) : null;
 
       let yMax = d3.max(data, function(d) {
@@ -246,7 +245,9 @@
       let yMin = this.axisData.y.start > 0 ? this.axisData.y.start : 0;
 
       x.domain(d3.extent(data, function(d) { return d.x; }));
-      if(this.parseTime) {
+      if(this.axisData.x.d3NiceType instanceof Function) {
+        x.nice(this.axisData.x.d3NiceType());
+      } else if(this.parseTime) {
         x.nice(d3[this.axisData.x.d3NiceType || "timeDay"]);
       } else if(this.axisData.x.niceTicks) {
         x.nice(this.axisData.x.niceTicks);
