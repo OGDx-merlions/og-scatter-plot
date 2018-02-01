@@ -33,7 +33,8 @@
 				notify: true,
 				value() {
 					return {top: 30, right: 20, bottom: 40, left: 50};
-				}
+				},
+				observer: '_redraw'
 			},
       /**
       * Chart Data
