@@ -36,6 +36,7 @@
     "px-spacing-design": "^1.0.2"
   },
   "resolutions": {
-    "webcomponentsjs": "^0.7.0"
+    "webcomponentsjs": "^0.7.0",
+    "px-overlay": "^1.0.0"
   }
 }

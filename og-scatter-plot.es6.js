@@ -111,6 +111,18 @@
       legendAlignment: {
         type: String,
         value: "right"
+      },
+      _legendValues: {
+        type: Array,
+        value() {
+          return [];
+        }
+      },
+      _defaultLegendValues: {
+        type: Array,
+        value() {
+          return [];
+        }
       }
     },
 
@@ -173,6 +185,7 @@
       this._drawTimelineSeparators(data);
       this._drawChart(data);
       this._drawAxes(data);
+      this._drawTooltip(data, this);
 
       this.fire("chart-drawn", {});
     },
@@ -249,7 +262,7 @@
       this.y = d3.scaleLinear().range([this.adjustedHeight, 0]).clamp(true);
 
       let x = this.x, y = this.y;
-      this.todayAsDate = this.today ? this.parseTime(this.today) : null;
+      this.todayAsDate = this.today && this.parseTime ? this.parseTime(this.today) : null;
 
       let yMax = d3.max(data, function(d) {
         return d.y.reduce((a,b) => {
@@ -332,7 +345,6 @@
     _drawChart(data) {
       let x = this.x, y = this.y, d3 = Px.d3;
       this.axisData.y.series.forEach((_series, idx) => {
-        
         let filteredData = data.filter((_datum) => {
           if(!_series.xStart && !_series.xEnd) {
             return true;
@@ -397,6 +409,45 @@
             });
       });
     },
+		_drawTooltip(data, scope) {
+      let x= this.x, y=this.y, me = scope, d3 = Px.d3,
+        bisectDate = d3.bisector(function(d) { return d.x; }).left;
+			this.updateLegendVal = (d) => {
+        me.set('_legendValues', []);
+				d.y.forEach((_, idx) => {
+          let _val = d.y[idx];
+          me.push('_legendValues', `${_val} ${(me.axisData.y.unit || "")}`);
+        })
+			};
+			this.revertLegendValToToday = () => {
+        me.set('_legendValues', []);
+			};
+			this.svg.append('rect')
+				.attr('class', 'overlay')
+				.attr('width', this.adjustedWidth)
+				.attr('height', this.adjustedHeight)
+				.on('mouseover', () => { 
+				})
+				.on('mouseout', () => {
+					this.revertLegendValToToday();
+				})
+				.on('mousemove', () => {
+					let m = d3.select(this.$.chart).select('rect.overlay').node().getScreenCTM();
+					let mouse = d3.select(this.$.chart).select('#chart svg').node().createSVGPoint(); 
+					mouse.x = d3.event.clientX;
+					mouse.y = d3.event.clientY;
+					mouse = mouse.matrixTransform(m.inverse());
+					const [mouseX, mouseY] = [mouse.x, mouse.y];
+					let mouseDate = x.invert(mouseX);
+					let i = bisectDate(data, mouseDate);
+
+					let d0 = data[i - 1] || data[0];
+					let d1 = data[i];
+					let d = d0 && d1 && (mouseDate - d0.x > d1.x - mouseDate) ? d1 : d0;
+					this.updateLegendVal(d);
+				});
+			
+		},
     _drawAxes(data) {
       let x = this.x, y = this.y, d3 = Px.d3;
 
@@ -448,6 +499,14 @@
     _redraw(newData, oldData) {
       Px.d3.select(this.$.chart).select("svg").remove();
       this.draw();
+    },
+
+    _getLegendValues(idx) {
+      return this.get('_legendValues')[idx];
+    },
+
+    _isEqual(val1, val2) {
+      return val1 === val2;
     },
 
     _toggleSeries(event) {
